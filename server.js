@@ -94,8 +94,8 @@ function proxyToMainServer(req, res, targetPath, method, body = '') {
     proxyReq.end();
 }
 
-// Khởi tạo Server HTTP Admin
-const server = http.createServer(async (req, res) => {
+// Hàm xử lý request chính
+const requestHandler = async (req, res) => {
     const parsedUrl = url.parse(req.url, true);
     const pathname = parsedUrl.pathname;
 
@@ -238,11 +238,17 @@ const server = http.createServer(async (req, res) => {
             res.end(content, 'utf-8');
         }
     });
-});
+};
 
-server.listen(PORT, () => {
-    console.log(`\n======================================================`);
-    console.log(`🔑 [ADMIN SERVER KHỞI CHẠY] Cổng quản trị đang hoạt động!`);
-    console.log(`👉 Đăng nhập quản trị: http://localhost:${PORT}`);
-    console.log(`======================================================\n`);
-});
+const server = http.createServer(requestHandler);
+
+if (!process.env.VERCEL) {
+    server.listen(PORT, () => {
+        console.log(`\n======================================================`);
+        console.log(`🔑 [ADMIN SERVER KHỞI CHẠY] Cổng quản trị đang hoạt động!`);
+        console.log(`👉 Đăng nhập quản trị: http://localhost:${PORT}`);
+        console.log(`======================================================\n`);
+    });
+}
+
+module.exports = requestHandler;
