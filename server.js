@@ -2,6 +2,7 @@ const http = require('http');
 const fs = require('fs');
 const path = require('path');
 const url = require('url');
+const crypto = require('crypto');
 
 const PORT = 3001;
 
@@ -37,8 +38,38 @@ function getMainSecretToken() {
     return 'admin_secret_token_123';
 }
 
-// Quản lý session trong bộ nhớ tạm (In-memory Sessions)
-const sessions = {};
+// Cấu hình mã hóa Session không trạng thái (Stateless Session) cho Vercel
+const SESSION_SECRET = process.env.SESSION_SECRET || 'stayhub_secret_session_key_2026';
+
+function generateSessionToken(username) {
+    const expires = Date.now() + 24 * 3600 * 1000; // Hạn dùng 24h
+    const data = `${username}:${expires}`;
+    const signature = crypto.createHmac('sha256', SESSION_SECRET).update(data).digest('hex');
+    return Buffer.from(`${data}:${signature}`).toString('base64');
+}
+
+function verifySessionToken(token) {
+    if (!token) return null;
+    try {
+        const decoded = Buffer.from(token, 'base64').toString('utf8');
+        const parts = decoded.split(':');
+        if (parts.length !== 3) return null;
+        
+        const username = parts[0];
+        const expires = parseInt(parts[1], 10);
+        const signature = parts[2];
+        
+        if (expires < Date.now()) return null;
+        
+        const expectedData = `${username}:${expires}`;
+        const expectedSignature = crypto.createHmac('sha256', SESSION_SECRET).update(expectedData).digest('hex');
+        
+        if (signature === expectedSignature) {
+            return { username };
+        }
+    } catch (e) {}
+    return null;
+}
 
 // Helper phân tích Cookie
 function parseCookies(request) {
@@ -53,11 +84,11 @@ function parseCookies(request) {
     return list;
 }
 
-// Kiểm tra phiên làm việc của Admin
+// Kiểm tra phiên làm việc của Admin (Stateless)
 function isAuthenticated(req) {
     const cookies = parseCookies(req);
-    const sessionId = cookies['admin_session_id'];
-    return sessionId && sessions[sessionId] && sessions[sessionId].expires > Date.now();
+    const sessionToken = cookies['admin_session_id'];
+    return verifySessionToken(sessionToken) !== null;
 }
 
 // Hàm gửi request proxy đến server dự án chính (port 3000)
@@ -117,18 +148,12 @@ const requestHandler = async (req, res) => {
             const adminConfig = getAdminConfig();
 
             if (credentials.username === adminConfig.username && credentials.password === adminConfig.password) {
-                // Tạo sessionId ngẫu nhiên
-                const sessionId = 'sess-' + Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
-                const expiryTime = Date.now() + 3600 * 1000; // Hạn dùng 1 giờ
+                // Tạo session token bảo mật mã hóa HMAC không trạng thái
+                const sessionToken = generateSessionToken(credentials.username);
 
-                sessions[sessionId] = {
-                    username: credentials.username,
-                    expires: expiryTime
-                };
-
-                // Thiết lập HttpOnly Cookie bảo mật
+                // Thiết lập HttpOnly Cookie bảo mật (Hạn dùng 24 giờ)
                 res.writeHead(200, {
-                    'Set-Cookie': `admin_session_id=${sessionId}; Path=/; HttpOnly; Max-Age=3600; SameSite=Lax`,
+                    'Set-Cookie': `admin_session_id=${sessionToken}; Path=/; HttpOnly; Max-Age=86400; SameSite=Lax`,
                     'Content-Type': 'application/json; charset=utf-8'
                 });
                 res.end(JSON.stringify({ success: true, message: 'Đăng nhập thành công!' }));
@@ -145,11 +170,6 @@ const requestHandler = async (req, res) => {
 
     // 2. ENDPOINT: Đăng xuất
     if (pathname === '/api/auth/logout' && req.method === 'POST') {
-        const cookies = parseCookies(req);
-        const sessionId = cookies['admin_session_id'];
-        if (sessionId && sessions[sessionId]) {
-            delete sessions[sessionId];
-        }
         res.writeHead(200, {
             'Set-Cookie': `admin_session_id=; Path=/; HttpOnly; Max-Age=0; SameSite=Lax`,
             'Content-Type': 'application/json; charset=utf-8'
