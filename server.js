@@ -11,7 +11,7 @@ const mainConfigPath = path.join(__dirname, '..', 'student-room-finder', 'config
 
 // Khởi tạo cấu hình tài khoản Admin mặc định
 function getAdminConfig() {
-    let config = { username: "admin", password: "adminpassword" };
+    let config = { username: "longk2tha@gmail.com", password: "Long2006@" };
     if (fs.existsSync(adminConfigPath)) {
         try {
             config = JSON.parse(fs.readFileSync(adminConfigPath, 'utf8'));
