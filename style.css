@@ -689,3 +689,220 @@ textarea {
     box-shadow: 0 4px 15px rgba(0, 0, 0, 0.25);
     border-color: rgba(59, 130, 246, 0.3) !important;
 }
+
+/* ==========================================
+   11. RESPONSIVE DESIGN FOR MOBILE & TABLETS (ANDROID & iOS)
+   ========================================== */
+
+@media (max-width: 992px) {
+    .grid-layout {
+        grid-template-columns: 1fr !important;
+        gap: 20px;
+    }
+}
+
+@media (max-width: 768px) {
+    /* Tránh highlight khi nhấn trên điện thoại */
+    * {
+        -webkit-tap-highlight-color: transparent;
+    }
+
+    /* Header */
+    header {
+        padding: 0 16px;
+        height: 64px;
+    }
+
+    .logo-text {
+        font-size: 15px;
+    }
+
+    .logo-sub {
+        font-size: 10px;
+    }
+
+    .header-actions .btn {
+        padding: 8px 12px;
+        font-size: 12px;
+    }
+    
+    .header-actions .btn span, 
+    .header-actions .btn i {
+        font-size: 12px;
+    }
+
+    /* App Container */
+    .app-container {
+        flex-direction: column;
+        height: auto;
+        min-height: calc(100vh - 64px);
+    }
+
+    /* Sidebar chuyển thành Thanh Điều Hướng Ngang (Horizontal Navigation Bar) */
+    .sidebar {
+        width: 100%;
+        height: auto;
+        border-right: none;
+        border-bottom: 1px solid var(--border-color);
+        padding: 8px 0;
+        flex-direction: row;
+        justify-content: flex-start;
+        align-items: center;
+        position: sticky;
+        top: 64px;
+        z-index: 90;
+        background: var(--sidebar-bg);
+    }
+
+    .tab-nav {
+        flex-direction: row;
+        overflow-x: auto;
+        width: 100%;
+        padding: 0 16px;
+        gap: 12px;
+        scrollbar-width: none; /* Ẩn scrollbar Firefox */
+    }
+
+    .tab-nav::-webkit-scrollbar {
+        display: none; /* Ẩn scrollbar Chrome/Safari */
+    }
+
+    .tab-btn {
+        width: auto;
+        white-space: nowrap;
+        flex-shrink: 0;
+        padding: 10px 14px;
+        font-size: 13px;
+        border-left: none;
+        border-bottom: 2px solid transparent;
+        border-radius: 8px;
+    }
+
+    .tab-btn.active {
+        border-left: none;
+        border-bottom: 2px solid var(--color-primary);
+        border-bottom-left-radius: 0;
+        border-bottom-right-radius: 0;
+        background: rgba(16, 185, 129, 0.08);
+    }
+
+    .pending-badge {
+        position: static !important;
+        margin-left: 6px;
+        display: inline-block;
+    }
+
+    .sys-info {
+        display: none; /* Ẩn thông tin hệ thống trên mobile để gọn màn hình */
+    }
+
+    /* Main Content */
+    .main-content {
+        padding: 16px;
+        overflow-y: visible; /* Cho phép scroll tự nhiên trên body */
+    }
+
+    .panel-title {
+        font-size: 18px;
+    }
+
+    .panel-desc {
+        font-size: 13px;
+    }
+
+    .card {
+        padding: 16px;
+        border-radius: 12px;
+    }
+
+    /* Form Rows */
+    .form-row {
+        grid-template-columns: 1fr;
+        gap: 12px;
+    }
+
+    /* Ngăn iOS auto-zoom khi click vào ô nhập liệu bằng cách tăng font-size lên 16px */
+    input[type="text"],
+    input[type="number"],
+    select,
+    textarea {
+        font-size: 16px !important;
+        padding: 12px;
+    }
+
+    /* Tiện nghi Grid */
+    .amenities-grid {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 10px;
+    }
+
+    /* Bảng điều khiển admin-room-card */
+    .admin-room-card {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 12px;
+        padding: 14px;
+    }
+
+    .room-title-line {
+        flex-direction: column;
+        gap: 4px;
+        width: 100%;
+    }
+
+    .room-meta-line {
+        flex-wrap: wrap;
+        gap: 8px 12px;
+    }
+
+    .btn-delete {
+        align-self: flex-end;
+        margin-left: 0;
+        width: 100%;
+        display: flex;
+        justify-content: center;
+        background: rgba(239, 68, 68, 0.08);
+        color: var(--color-danger);
+    }
+
+    /* Toast Notification */
+    .toast {
+        left: 16px;
+        right: 16px;
+        bottom: 16px;
+        justify-content: center;
+    }
+}
+
+@media (max-width: 480px) {
+    /* Tối ưu hóa cho màn hình siêu nhỏ như iPhone SE */
+    header {
+        flex-direction: column;
+        height: auto;
+        padding: 12px 16px;
+        gap: 10px;
+    }
+
+    .header-actions {
+        width: 100%;
+        justify-content: space-between;
+    }
+
+    .header-actions .btn {
+        flex: 1;
+        justify-content: center;
+    }
+
+    .sidebar {
+        top: 108px; /* Dịch chuyển do header cao hơn khi xếp chồng dọc */
+    }
+
+    .app-container {
+        min-height: calc(100vh - 108px);
+    }
+
+    .amenities-grid {
+        grid-template-columns: 1fr;
+    }
+}
+

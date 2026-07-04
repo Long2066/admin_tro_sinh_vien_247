@@ -1,8 +1,10 @@
 <!DOCTYPE html>
 <html lang="vi">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="theme-color" content="#0b0f19">
     <title>Đăng Nhập Quản Trị - Smart Room Finder</title>
     
     <!-- Google Fonts & FontAwesome -->
@@ -35,8 +37,11 @@
             justify-content: center;
             align-items: center;
             min-height: 100vh;
-            overflow: hidden;
+            overflow-x: hidden;
+            overflow-y: auto;
             position: relative;
+            padding: 20px;
+            -webkit-tap-highlight-color: transparent;
         }
 
         /* Hiệu ứng bong bóng ánh sáng nền (Glowing Orbs) */
@@ -250,6 +255,38 @@
 
         .footer-note a:hover {
             text-decoration: underline;
+        }
+
+        @media (max-width: 480px) {
+            body {
+                padding: 16px;
+            }
+            .login-card {
+                padding: 28px 20px;
+                border-radius: 16px;
+                margin-top: 10px;
+                margin-bottom: 10px;
+            }
+            .form-input {
+                font-size: 16px; /* Tránh zoom mặc định của Safari iOS */
+                padding: 14px 16px 14px 44px;
+            }
+            .input-icon {
+                left: 14px;
+            }
+            .logo-icon {
+                width: 64px;
+                height: 64px;
+                border-radius: 16px;
+                font-size: 32px;
+            }
+            .logo-text {
+                font-size: 20px;
+            }
+            .orb {
+                filter: blur(80px);
+                opacity: 0.25;
+            }
         }
     </style>
 </head>
