@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bảng Quản Trị - Smart Room Finder</title>
+    
+    <!-- Google Fonts & FontAwesome -->
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Leaflet Map CSS -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.css" />
+
+    <!-- Style Admin CSS -->
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <!-- Header ứng dụng Admin -->
+    <header>
+        <div class="logo-container">
+            <div class="logo-icon">
+                <i class="fa-solid fa-gears"></i>
+            </div>
+            <div>
+                <span class="logo-text">Smart Room Finder Admin</span>
+                <span class="logo-sub">Hệ thống điều khiển & Quản lý phòng trọ</span>
+            </div>
+        </div>
+        <div class="header-actions">
+            <a href="http://localhost:3000" target="_blank" class="btn btn-secondary">
+                <i class="fa-solid fa-map"></i> Xem Bản Đồ Chính
+            </a>
+            <button class="btn btn-danger" id="logout-btn">
+                <i class="fa-solid fa-right-from-bracket"></i> Đăng Xuất
+            </button>
+        </div>
+    </header>
+
+    <!-- Thân ứng dụng chính -->
+    <div class="app-container">
+        
+        <!-- Sidebar Navigation -->
+        <aside class="sidebar">
+            <nav class="tab-nav">
+                <button class="tab-btn active" data-tab="fb-scraper">
+                    <i class="fa-solid fa-square-rss"></i>
+                    <span>Facebook Scraper</span>
+                </button>
+                <button class="tab-btn" data-tab="landlord-manager">
+                    <i class="fa-solid fa-house-chimney-user"></i>
+                    <span>Đăng & Quản Lý Trọ</span>
+                </button>
+                <button class="tab-btn" data-tab="pending-approvals" id="tab-btn-pending" style="position: relative;">
+                    <i class="fa-solid fa-circle-check"></i>
+                    <span>Kiểm Duyệt Trọ</span>
+                    <span class="pending-badge" id="pending-badge-count" style="position: absolute; top: 6px; right: 8px; background: #ef4444; color: white; border-radius: 10px; padding: 2px 6px; font-size: 10px; font-weight: 700; display: none;">0</span>
+                </button>
+            </nav>
+            <div class="sys-info">
+                <div class="info-item">
+                    <span>Đang hoạt động:</span>
+                    <strong style="color: var(--color-primary)">Port 3001</strong>
+                </div>
+                <div class="info-item">
+                    <span>Kết nối API:</span>
+                    <strong style="color: var(--color-primary)">Port 3000</strong>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Khối nội dung chính (Chuyển đổi theo tab) -->
+        <main class="main-content">
+
+            <!-- TAB 1: FACEBOOK SCRAPER -->
+            <div class="tab-panel active" id="tab-fb-scraper">
+                <div class="panel-header">
+                    <h2 class="panel-title"><i class="fa-solid fa-square-rss" style="color: var(--color-primary)"></i> Cấu hình & Điều khiển Facebook Scraper</h2>
+                    <p class="panel-desc">Thiết lập Cookie tài khoản phụ và danh sách nhóm mục tiêu để tự động quét tin đăng phòng trọ.</p>
+                </div>
+
+                <div class="grid-layout">
+                    <!-- Khối cấu hình -->
+                    <div class="card">
+                        <div class="card-title"><i class="fa-solid fa-key" style="color: var(--color-primary)"></i> Tài khoản & Nhóm quét</div>
+                        
+                        <div class="form-group">
+                            <label for="admin-fb-cookie">Facebook Cookie (*)</label>
+                            <textarea id="admin-fb-cookie" placeholder="Dán cookie tài khoản phụ (clone) tại đây để tránh checkpoint tài khoản chính..."></textarea>
+                            <span class="input-hint">Nhập cookie định dạng: c_user=...; xs=...;</span>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="admin-fb-groups">Danh sách Nhóm & Tỉnh (Mỗi dòng 1 nhóm)</label>
+                            <textarea id="admin-fb-groups" placeholder="Ví dụ:&#10;https://facebook.com/groups/12345 | Hà Giang&#10;https://facebook.com/groups/78901 | Hà Nội" style="height: 120px;"></textarea>
+                            <span class="input-hint">Định dạng: [Đường dẫn Group] | [Tỉnh/Thành] (Sử dụng dấu gạch đứng để ngăn cách)</span>
+                        </div>
+
+                        <button class="btn btn-primary" id="save-config-btn" style="width: 100%; justify-content: center; margin-top: 15px;">
+                            <i class="fa-solid fa-floppy-disk"></i> Lưu Cấu Hình
+                        </button>
+                    </div>
+
+                    <!-- Khối bảng điều khiển cào -->
+                    <div class="card">
+                        <div class="card-title"><i class="fa-solid fa-terminal" style="color: #10b981"></i> Trạng thái & Bảng điều khiển cào</div>
+                        
+                        <div class="status-box">
+                            <span class="status-label">Trạng thái tiến trình cào:</span>
+                            <span id="crawl-status-badge" class="badge badge-warning">Chưa chạy</span>
+                        </div>
+
+                        <button class="btn btn-accent" id="start-crawl-btn" style="width: 100%; justify-content: center; margin-bottom: 15px;">
+                            <i class="fa-solid fa-play"></i> Bắt đầu cào ngay lập tức
+                        </button>
+
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                            <span style="font-size: 12px; font-weight: 600; color: var(--text-muted);">Nhật ký hệ thống (System Logs)</span>
+                            <button id="refresh-logs-btn" class="btn-text">
+                                <i class="fa-solid fa-arrows-rotate"></i> Làm mới logs
+                            </button>
+                        </div>
+                        <div id="admin-console-log" class="console-log">Đang tải lịch sử logs cào dữ liệu từ máy chủ chính...</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TAB 2: LANDLORD MANAGER (ĐĂNG & QUẢN LÝ TRỌ) -->
+            <div class="tab-panel" id="tab-landlord-manager">
+                <div class="panel-header">
+                    <h2 class="panel-title"><i class="fa-solid fa-house-chimney-user" style="color: var(--color-primary)"></i> Đăng & Quản Lý Phòng Trọ Chủ Nhà</h2>
+                    <p class="panel-desc">Thêm thủ công phòng trọ lên bản đồ chính bằng form chi tiết hoặc dùng AI bóc tách tự động.</p>
+                </div>
+
+                <div class="grid-layout" style="grid-template-columns: 1.1fr 0.9fr;">
+                    
+                    <!-- Form Đăng trọ bên trái -->
+                    <div class="card" style="display: flex; flex-direction: column; gap: 15px;">
+                        
+                        <!-- AI Đăng trọ siêu tốc -->
+                        <div class="ai-box">
+                            <div class="card-sub-title"><i class="fa-solid fa-wand-magic-sparkles" style="color: var(--color-primary)"></i> Đăng trọ nhanh bằng mô tả tự do (AI bóc tách)</div>
+                            <div class="form-group">
+                                <textarea id="landlord-ai-input" placeholder="Ví dụ: Cho thuê phòng khép kín 25m2 ở ngõ 105 Xuân Thủy Cầu Giấy. Có điều hòa, bình nóng lạnh, máy giặt, ban công thoáng. Giá thuê 3 triệu/tháng, đặt cọc 1.5 triệu. Liên hệ Bác Hoa sđt 0987654321..." style="height: 80px;"></textarea>
+                            </div>
+                            <button class="btn btn-primary" id="ai-fill-btn" style="width: 100%; justify-content: center;">
+                                <i class="fa-solid fa-bolt-lightning"></i> AI Tự Động Phân Tích & Điền Form
+                            </button>
+                        </div>
+
+                        <!-- Form chi tiết phòng trọ -->
+                        <div class="landlord-detail-form">
+                            <div class="card-sub-title"><i class="fa-solid fa-file-waveform" style="color: var(--color-primary)"></i> Thông tin chi tiết phòng trọ</div>
+                            
+                            <div class="form-group">
+                                <label for="landlord-title">Tiêu đề tin đăng (*)</label>
+                                <input type="text" id="landlord-title" placeholder="VD: Phòng khép kín đầy đủ đồ gần ĐH Sư Phạm">
+                            </div>
+
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="landlord-price">Giá thuê (VND/tháng) (*)</label>
+                                    <input type="number" id="landlord-price" placeholder="VD: 3000000">
+                                </div>
+                                <div class="form-group">
+                                    <label for="landlord-deposit">Tiền cọc (VND) (*)</label>
+                                    <input type="number" id="landlord-deposit" placeholder="VD: 1500000">
+                                </div>
+                            </div>
+
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="landlord-phone">Số điện thoại liên hệ (*)</label>
+                                    <input type="text" id="landlord-phone" placeholder="VD: 0987654321">
+                                </div>
+                                <div class="form-group">
+                                    <label for="landlord-owner-name">Tên chủ trọ / Người liên hệ</label>
+                                    <input type="text" id="landlord-owner-name" placeholder="VD: Bác Hoa">
+                                </div>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="landlord-address">Địa chỉ phòng trọ (*)</label>
+                                <input type="text" id="landlord-address" placeholder="VD: Số 12 Ngõ 105 Xuân Thủy, Dịch Vọng Hậu, Cầu Giấy, Hà Nội">
+                            </div>
+
+                            <!-- Tọa độ định vị -->
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="landlord-lat">Vĩ độ (Latitude) (*)</label>
+                                    <input type="number" id="landlord-lat" placeholder="VD: 21.0378" step="0.000001">
+                                </div>
+                                <div class="form-group">
+                                    <label for="landlord-lon">Kinh độ (Longitude) (*)</label>
+                                    <input type="number" id="landlord-lon" placeholder="VD: 105.7825" step="0.000001">
+                                </div>
+                            </div>
+
+                            <!-- Checkboxes Tiện nghi -->
+                            <div class="form-group">
+                                <label>Tiện nghi phòng</label>
+                                <div class="amenities-grid" id="landlord-checkboxes">
+                                    <label class="checkbox-label"><input type="checkbox" value="AC"> Điều hòa</label>
+                                    <label class="checkbox-label"><input type="checkbox" value="Wifi"> Wifi</label>
+                                    <label class="checkbox-label"><input type="checkbox" value="Bed"> Giường</label>
+                                    <label class="checkbox-label"><input type="checkbox" value="Wardrobe"> Tủ đồ</label>
+                                    <label class="checkbox-label"><input type="checkbox" value="Heater"> Nóng lạnh</label>
+                                    <label class="checkbox-label"><input type="checkbox" value="Fridge"> Tủ lạnh</label>
+                                    <label class="checkbox-label"><input type="checkbox" value="Balcony"> Ban công</label>
+                                    <label class="checkbox-label"><input type="checkbox" value="Kitchen"> Bếp nấu</label>
+                                    <label class="checkbox-label"><input type="checkbox" value="WashingMachine"> Máy giặt</label>
+                                </div>
+                            </div>
+
+                            <!-- Khối tải hình ảnh phòng trọ -->
+                            <div class="form-group">
+                                <label>Hình ảnh phòng trọ (Tối đa 4 ảnh, định dạng PNG/JPG) (*)</label>
+                                <div class="image-upload-wrapper" style="display: flex; align-items: center;">
+                                    <input type="file" id="landlord-images" accept="image/png, image/jpeg" multiple style="display: none;">
+                                    <button type="button" class="btn btn-secondary" onclick="document.getElementById('landlord-images').click()">
+                                        <i class="fa-solid fa-camera"></i> Chọn hình ảnh
+                                    </button>
+                                    <span id="upload-status-label" class="input-hint" style="display: inline-block; margin-left: 10px;">Đã chọn 0/4 ảnh</span>
+                                </div>
+                                <div id="image-previews" class="previews-container" style="display: flex; gap: 8px; margin-top: 10px; flex-wrap: wrap;"></div>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="landlord-desc">Mô tả bổ sung</label>
+                                <textarea id="landlord-desc" placeholder="Thông tin thêm về giờ giấc tự do, điện nước, khu để xe..." style="height: 60px;"></textarea>
+                            </div>
+
+                            <button class="btn btn-accent" id="submit-room-btn" style="width: 100%; justify-content: center; margin-top: 10px;">
+                                <i class="fa-solid fa-cloud-arrow-up"></i> Đăng Phòng Lên Bản Đồ Chính
+                            </button>
+                        </div>
+
+                    </div>
+
+                    <!-- Bản đồ chọn vị trí và danh sách phòng bên phải -->
+                    <div style="display: flex; flex-direction: column; gap: 20px;">
+                        
+                        <!-- Bản đồ nhỏ định vị -->
+                        <div class="card" style="padding: 12px; display: flex; flex-direction: column; gap: 8px;">
+                            <div class="card-title" style="margin-bottom: 4px;">
+                                <i class="fa-solid fa-map-location-dot" style="color: var(--color-primary)"></i> Click bản đồ để lấy tọa độ
+                            </div>
+                            <div id="admin-map" style="height: 250px; border-radius: 12px; border: 1px solid var(--border-color)"></div>
+                            <span class="input-hint" style="margin-top: 4px;"><i class="fa-solid fa-info-circle"></i> Di chuyển bản đồ đến khu vực phòng trọ, click chuột để tự động lấy vĩ độ/kinh độ điền vào form.</span>
+                        </div>
+
+                        <!-- Danh sách phòng trọ đang quản lý -->
+                        <div class="card" style="flex: 1; display: flex; flex-direction: column;">
+                            <div class="card-title">
+                                <i class="fa-solid fa-list-check" style="color: var(--color-primary)"></i> Trọ do bạn đang quản lý (<span id="landlord-rooms-count">0</span>)
+                            </div>
+                            <div class="room-list-scroll" id="admin-rooms-list">
+                                <div class="empty-list">Đang tải danh sách phòng trọ...</div>
+                            </div>
+                        </div>
+
+                    </div>
+
+                </div>
+            </div>
+
+            <!-- TAB 3: KIỂM DUYỆT TIN ĐĂNG -->
+            <div class="tab-panel" id="tab-pending-approvals">
+                <div class="panel-header">
+                    <h2 class="panel-title"><i class="fa-solid fa-circle-check" style="color: var(--color-primary)"></i> Phê duyệt tin đăng trọ người dùng</h2>
+                    <p class="panel-desc">Xem xét danh sách phòng trọ do người dùng gửi lên. Đối chiếu khoảng cách vị trí GPS thực tế để tránh lừa đảo đăng tin ảo.</p>
+                </div>
+
+                <div class="pending-approvals-grid" id="pending-rooms-list" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(360px, 1fr)); gap: 16px; margin-top: 15px;">
+                    <div class="empty-list" style="grid-column: 1 / -1;">Đang tải danh sách chờ duyệt...</div>
+                </div>
+            </div>
+
+        </main>
+
+    </div>
+
+    <!-- TOAST NOTIFICATION -->
+    <div class="toast" id="toast-notification">
+        <i class="fa-solid fa-check-circle" id="toast-icon"></i>
+        <span id="toast-message">Thông báo thành công!</span>
+    </div>
+
+    <!-- Leaflet.js Map Library -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.js"></script>
+
+    <!-- Admin App JS -->
+    <script src="app.js"></script>
+</body>
+</html>
