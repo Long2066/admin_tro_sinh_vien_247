@@ -1,4 +1,5 @@
 const http = require('http');
+const https = require('https');
 const fs = require('fs');
 const path = require('path');
 const url = require('url');
@@ -91,12 +92,18 @@ function isAuthenticated(req) {
     return verifySessionToken(sessionToken) !== null;
 }
 
-// Hàm gửi request proxy đến server dự án chính (port 3000)
+// Cấu hình kết nối tới server chính (dùng biến môi trường hoặc mặc định tên miền chính thức trên Vercel)
+const isProd = !!process.env.VERCEL;
+const MAIN_HOST = process.env.MAIN_SERVER_HOST || (isProd ? 'tro-sinh-vien-247.vercel.app' : 'localhost');
+const MAIN_PORT = process.env.MAIN_SERVER_PORT ? parseInt(process.env.MAIN_SERVER_PORT, 10) : (isProd ? 443 : 3000);
+const MAIN_PROTOCOL = process.env.MAIN_SERVER_PROTOCOL || (isProd ? 'https' : 'http');
+
+// Hàm gửi request proxy đến server dự án chính (tự động đổi HTTP/HTTPS tùy môi trường)
 function proxyToMainServer(req, res, targetPath, method, body = '') {
     const token = getMainSecretToken();
     const options = {
-        hostname: 'localhost',
-        port: 3000,
+        hostname: MAIN_HOST,
+        port: MAIN_PORT,
         path: targetPath,
         method: method,
         headers: {
@@ -105,7 +112,9 @@ function proxyToMainServer(req, res, targetPath, method, body = '') {
         }
     };
 
-    const proxyReq = http.request(options, (proxyRes) => {
+    const requestModule = MAIN_PROTOCOL === 'https' ? https : http;
+
+    const proxyReq = requestModule.request(options, (proxyRes) => {
         res.writeHead(proxyRes.statusCode, {
             'Content-Type': proxyRes.headers['content-type'] || 'application/json; charset=utf-8',
             'Access-Control-Allow-Origin': '*'
@@ -116,7 +125,11 @@ function proxyToMainServer(req, res, targetPath, method, body = '') {
     proxyReq.on('error', (err) => {
         console.error("[ADMIN SERVER] Lỗi kết nối tới Main Server:", err.message);
         res.writeHead(502, { 'Content-Type': 'application/json; charset=utf-8' });
-        res.end(JSON.stringify({ error: 'Không thể kết nối tới máy chủ chính (port 3000)', details: err.message }));
+        res.end(JSON.stringify({ 
+            error: 'Không thể kết nối tới máy chủ chính', 
+            details: err.message,
+            target: `${MAIN_PROTOCOL}://${MAIN_HOST}:${MAIN_PORT}${targetPath}`
+        }));
     });
 
     if (body) {
