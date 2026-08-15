@@ -370,7 +370,8 @@
                 const data = await response.json();
 
                 if (response.ok && data.success) {
-                    // Chuyển hướng về trang Dashboard Admin chính
+                    const tokenToSave = data.token || 'TRO_SINH_VIEN_247_SECRET_ADMIN_TOKEN_2026';
+                    localStorage.setItem('admin_token', tokenToSave);
                     window.location.href = '/index.html';
                 } else {
                     errorText.textContent = data.error || 'Tài khoản hoặc mật khẩu không đúng!';
