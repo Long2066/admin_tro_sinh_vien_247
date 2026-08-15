@@ -857,6 +857,27 @@ function showToast(message, isError = false) {
     }, 3000);
 }
 
+// Lightbox Modal Xem Ảnh Phòng Trọ Phóng To
+window.openImageModal = function(src, event) {
+    if (event) {
+        event.preventDefault();
+        event.stopPropagation();
+    }
+    const modal = document.getElementById('image-modal');
+    const modalImg = document.getElementById('image-modal-img');
+    if (modal && modalImg) {
+        modalImg.src = src;
+        modal.style.display = 'flex';
+    }
+};
+
+window.closeImageModal = function() {
+    const modal = document.getElementById('image-modal');
+    if (modal) {
+        modal.style.display = 'none';
+    }
+};
+
 // ==========================================
 // 6. PHÂN HỆ KIỂM DUYỆT TIN ĐĂNG (USER POSTS)
 // ==========================================
@@ -963,8 +984,8 @@ function renderPendingRoomsList(rooms) {
         if (Array.isArray(room.images) && room.images.length > 0) {
             imagesHtml = `
                 <div style="display: flex; gap: 6px; overflow-x: auto; padding-bottom: 6px;">
-                    ${room.images.map(img => `
-                        <img src="${img}" style="width: 75px; height: 75px; object-fit: cover; border-radius: 6px; border: 1px solid var(--border-color); cursor: pointer;" onclick="window.open('${img}', '_blank')">
+                    ${room.images.map((img, idx) => `
+                        <img src="${img}" class="pending-img-thumb" data-img-idx="${idx}" style="width: 75px; height: 75px; object-fit: cover; border-radius: 6px; border: 1px solid var(--border-color); cursor: pointer;" alt="Ảnh phòng trọ">
                     `).join('')}
                 </div>
             `;
@@ -1003,6 +1024,19 @@ function renderPendingRoomsList(rooms) {
             </div>
         `;
         container.appendChild(card);
+
+        // Gán sự kiện click phóng to ảnh an toàn
+        const imgThumbs = card.querySelectorAll('.pending-img-thumb');
+        imgThumbs.forEach((imgEl) => {
+            imgEl.addEventListener('click', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                const idx = parseInt(imgEl.getAttribute('data-img-idx'), 10);
+                if (room.images && room.images[idx]) {
+                    window.openImageModal(room.images[idx], e);
+                }
+            });
+        });
     });
 }
 
