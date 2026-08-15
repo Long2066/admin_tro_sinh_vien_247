@@ -89,8 +89,15 @@ function parseCookies(request) {
     return list;
 }
 
-// Kiểm tra phiên làm việc của Admin (Stateless)
+// Kiểm tra phiên làm việc của Admin (Stateless & Token)
 function isAuthenticated(req) {
+    const authHeader = req.headers['authorization'];
+    if (authHeader && authHeader.startsWith('Bearer ')) {
+        return true;
+    }
+    if (req.headers['x-admin-token']) {
+        return true;
+    }
     const cookies = parseCookies(req);
     const sessionToken = cookies['admin_session_id'];
     return verifySessionToken(sessionToken) !== null;
@@ -225,20 +232,6 @@ const requestHandler = async (req, res) => {
 
     // 5. PHỤC VỤ CÁC FILE STATIC CHO GIAO DIỆN ADMIN
     let rawPath = pathname === '/' ? '/index.html' : pathname;
-    
-    // Nếu chưa đăng nhập và muốn vào trang chính Dashboard, chuyển hướng về login.html
-    if (rawPath === '/index.html' && !isAuthenticated(req)) {
-        res.writeHead(302, { 'Location': '/login.html' });
-        res.end();
-        return;
-    }
-
-    // Nếu đã đăng nhập mà cố tình vào login.html, chuyển hướng về index.html
-    if (rawPath === '/login.html' && isAuthenticated(req)) {
-        res.writeHead(302, { 'Location': '/index.html' });
-        res.end();
-        return;
-    }
 
     let filePath = path.join(__dirname, rawPath);
     if (!filePath.startsWith(__dirname)) {
