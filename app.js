@@ -857,6 +857,10 @@ window.rejectPendingRoom = async function(id) {
             } else {
                 showToast("Lỗi từ chối tin từ máy chủ!", true);
             }
+        } catch (e) {
+            showToast("Lỗi kết nối mạng khi gửi lệnh từ chối!", true);
+        }
+    }
 };
 
 // ==========================================
