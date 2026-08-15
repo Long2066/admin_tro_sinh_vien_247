@@ -657,7 +657,7 @@ function renderAdminRoomsList(rooms) {
                 </div>
                 <div class="room-meta-line">
                     <span><i class="fa-solid fa-location-dot"></i> ${room.standardizedAddress || room.address.split(',').slice(0, 3).join(',')}</span>
-                    <span><i class="fa-solid fa-phone"></i> ${room.contactPhone} (${room.ownerName})</span>
+                    <span><i class="fa-solid fa-phone"></i> ${room.contactPhone || 'Không có SĐT'} (${room.ownerName})${room.fbUrl ? ` <a href="${room.fbUrl}" target="_blank" style="color: #3b82f6; text-decoration: none; font-weight: 600; margin-left: 4px;"><i class="fa-brands fa-facebook"></i> FB Link</a>` : ''}</span>
                 </div>
             </div>
             <button class="btn-delete" onclick="deleteRoom('${room.id}')" title="Xóa phòng trọ">
@@ -697,6 +697,7 @@ async function submitLandlordRoom() {
     const price = isContactPrice ? 0 : parseFloat(priceRaw);
     const deposit = document.getElementById('landlord-deposit').value.trim();
     const phone = document.getElementById('landlord-phone').value.trim();
+    const fbUrl = document.getElementById('landlord-fb-url') ? document.getElementById('landlord-fb-url').value.trim() : '';
     const ownerName = document.getElementById('landlord-owner-name').value.trim() || 'Chủ trọ';
     const address = document.getElementById('landlord-address').value.trim();
     let latRaw = document.getElementById('landlord-lat').value.trim();
@@ -712,8 +713,8 @@ async function submitLandlordRoom() {
         showToast("Vui lòng nhập Giá thuê hợp lệ hoặc chọn 'LH Chủ Nhà để nhận báo giá'!", true);
         return;
     }
-    if (!phone) {
-        showToast("Vui lòng nhập Số điện thoại liên hệ!", true);
+    if (!phone && !fbUrl) {
+        showToast("Vui lòng nhập Số điện thoại hoặc Link Facebook cá nhân liên hệ!", true);
         return;
     }
     if (!address) {
@@ -742,11 +743,8 @@ async function submitLandlordRoom() {
         }
     }
 
-    // 3. Xử lý ảnh: Dùng ảnh mặc định nếu chủ trọ không tải ảnh
+    // 3. Xử lý ảnh: giữ mảng rỗng nếu chủ trọ không tải ảnh nào
     let images = [...adminState.selectedImages];
-    if (images.length === 0) {
-        images = ["https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?auto=format&fit=crop&w=600&q=80"];
-    }
 
     // Lấy các tiện nghi đã chọn
     const amenities = [];
@@ -759,6 +757,7 @@ async function submitLandlordRoom() {
         price: parseFloat(price),
         deposit: parseFloat(deposit || price),
         contactPhone: phone,
+        fbUrl: fbUrl,
         ownerName: ownerName,
         address: address,
         coords: finalCoords,
