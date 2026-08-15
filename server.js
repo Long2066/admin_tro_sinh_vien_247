@@ -105,7 +105,7 @@ function isAuthenticated(req) {
 
 // Cấu hình kết nối tới server chính (dùng biến môi trường hoặc mặc định tên miền chính thức trên Vercel)
 const isProd = !!process.env.VERCEL;
-const MAIN_HOST = process.env.MAIN_SERVER_HOST || (isProd ? 'tro-sinh-vien-247.vercel.app' : 'localhost');
+const MAIN_HOST = process.env.MAIN_SERVER_HOST || (isProd ? 'trosinhvien.io.vn' : 'localhost');
 const MAIN_PORT = process.env.MAIN_SERVER_PORT ? parseInt(process.env.MAIN_SERVER_PORT, 10) : (isProd ? 443 : 3000);
 const MAIN_PROTOCOL = process.env.MAIN_SERVER_PROTOCOL || (isProd ? 'https' : 'http');
 
