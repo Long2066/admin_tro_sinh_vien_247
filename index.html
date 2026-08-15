@@ -277,6 +277,25 @@
                 </div>
             </div>
 
+            <!-- TAB 3: KIỂM DUYỆT TIN ĐĂNG TỪ NGƯỜI DÙNG -->
+            <div class="tab-panel" id="tab-pending-approvals">
+                <div class="panel-header" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+                    <div>
+                        <h2 class="panel-title"><i class="fa-solid fa-circle-check" style="color: var(--color-primary)"></i> Phê Duyệt & Kiểm Duyệt Tin Đăng Phòng Trọ</h2>
+                        <p class="panel-desc">Danh sách phòng trọ do người dùng và chủ nhà tự đăng từ website chính. Admin kiểm tra thông tin và duyệt để hiển thị lên bản đồ.</p>
+                    </div>
+                    <button class="btn btn-secondary" id="refresh-pending-btn" onclick="loadPendingRooms()">
+                        <i class="fa-solid fa-rotate"></i> Làm mới danh sách
+                    </button>
+                </div>
+
+                <div id="pending-rooms-list" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 16px; margin-top: 15px;">
+                    <div class="empty-list" style="grid-column: 1 / -1; padding: 40px; text-align: center; color: var(--text-muted);">
+                        <i class="fa-solid fa-spinner fa-spin"></i> Đang tải danh sách tin chờ duyệt...
+                    </div>
+                </div>
+            </div>
+
             <!-- TAB 4: THỐNG KÊ TRUY CẬP REAL-TIME -->
             <div class="tab-panel" id="tab-analytics">
                 <div class="panel-header" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">

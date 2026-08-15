@@ -20,8 +20,17 @@ document.addEventListener('DOMContentLoaded', async () => {
     initAnalyticsPanel();
     initLogout();
 
-    // Cập nhật huy hiệu tin chờ duyệt ban đầu
+    // Cập nhật danh sách & huy hiệu tin chờ duyệt ban đầu
+    loadPendingRooms();
     updatePendingBadge();
+
+    // Tự động làm mới số dư tin chờ duyệt mỗi 15s
+    setInterval(() => {
+        updatePendingBadge();
+        if (adminState.activeTab === 'pending-approvals') {
+            loadPendingRooms();
+        }
+    }, 15000);
 });
 
 // ==========================================
@@ -922,10 +931,13 @@ function renderPendingRoomsList(rooms) {
             `;
         }
 
+        const priceVal = parseFloat(room.price) || 0;
+        const priceText = priceVal > 0 ? (priceVal / 1000000).toFixed(1) + ' Tr/tháng' : 'LH Chủ Nhà (Trọ) để nhận báo giá';
+
         card.innerHTML = `
             <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 8px;">
                 <h4 style="margin: 0; font-size: 14.5px; font-weight: 700; color: white;">${room.title}</h4>
-                <span style="font-family: var(--font-heading); font-size: 15px; font-weight: 700; color: var(--color-primary); white-space: nowrap;">${(room.price / 1000000).toFixed(1)} Tr/tháng</span>
+                <span style="font-family: var(--font-heading); font-size: ${priceVal <= 0 ? '12px' : '15px'}; font-weight: 700; color: ${priceVal <= 0 ? '#38bdf8' : 'var(--color-primary)'}; white-space: nowrap;">${priceText}</span>
             </div>
             
             <div style="font-size: 12.5px; color: var(--text-secondary); display: flex; flex-direction: column; gap: 4px;">
