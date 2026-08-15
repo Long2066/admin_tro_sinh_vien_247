@@ -254,6 +254,27 @@ function initLandlordPanel() {
     // Sự kiện chọn ảnh
     document.getElementById('landlord-images').addEventListener('change', handleImageSelect);
 
+    // Sự kiện nhập địa chỉ để auto-search định vị trên bản đồ
+    let landlordGeocodeTimeout = null;
+    const landlordAddrInput = document.getElementById('landlord-address');
+    if (landlordAddrInput) {
+        landlordAddrInput.addEventListener('input', () => {
+            clearTimeout(landlordGeocodeTimeout);
+            landlordGeocodeTimeout = setTimeout(() => {
+                geocodeLandlordAddress();
+            }, 600);
+        });
+        landlordAddrInput.addEventListener('blur', geocodeLandlordAddress);
+        landlordAddrInput.addEventListener('change', geocodeLandlordAddress);
+        landlordAddrInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                clearTimeout(landlordGeocodeTimeout);
+                geocodeLandlordAddress();
+            }
+        });
+    }
+
     // Sự kiện toggle LH Chủ Nhà giá thuê
     const priceContactCb = document.getElementById('landlord-price-contact');
     const priceInput = document.getElementById('landlord-price');
@@ -467,6 +488,7 @@ function parseRoomDescription() {
     const addrMatch = text.match(addrRegex);
     if (addrMatch) {
         document.getElementById('landlord-address').value = addrMatch[0].trim();
+        geocodeLandlordAddress();
     }
 
     // 6. Tiêu đề
@@ -501,6 +523,64 @@ function parseRoomDescription() {
     document.getElementById('landlord-desc').value = text;
 
     showToast("AI phân tích mô tả và điền form thành công!", false);
+}
+
+// Tự động làm sạch địa chỉ để loại bỏ các thông tin rác mà Nominatim không nhận diện được
+function cleanAddressForGeocoding(addr) {
+    if (!addr) return '';
+    return addr
+        .replace(/(?:tổ|ngõ|ngách|hẻm|số|khu|xóm|đội|tòa|căn)\s+[0-9A-Za-z\-]+/gi, '')
+        .replace(/\s+/g, ' ')
+        .replace(/,\s*,/g, ',')
+        .replace(/^[\s,]+|[\s,]+$/g, '')
+        .trim();
+}
+
+// Định vị bản đồ admin dựa vào địa chỉ tự nhập ở form đăng trọ chủ nhà
+async function geocodeLandlordAddress() {
+    const addressInput = document.getElementById('landlord-address');
+    const address = addressInput.value.trim();
+    if (!address) return;
+
+    try {
+        let searchQuery = address;
+        let url = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(searchQuery + ', Vietnam')}&format=json&limit=1`;
+        let res = await fetch(url, { headers: { 'User-Agent': 'SmartRoomFinderAdmin/1.0' } });
+        let data = res.ok ? await res.json() : [];
+
+        // Nếu không có kết quả, tự động làm sạch địa chỉ (bỏ tổ/ngõ/ngách/số) để tìm lại
+        if (!data || data.length === 0) {
+            const cleanedQuery = cleanAddressForGeocoding(address);
+            if (cleanedQuery && cleanedQuery !== address) {
+                url = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(cleanedQuery + ', Vietnam')}&format=json&limit=1`;
+                res = await fetch(url, { headers: { 'User-Agent': 'SmartRoomFinderAdmin/1.0' } });
+                data = res.ok ? await res.json() : [];
+            }
+        }
+
+        if (data && data.length > 0) {
+            const lat = parseFloat(data[0].lat);
+            const lon = parseFloat(data[0].lon);
+
+            document.getElementById('landlord-lat').value = lat.toFixed(6);
+            document.getElementById('landlord-lon').value = lon.toFixed(6);
+
+            if (adminState.map) {
+                adminState.map.setView([lat, lon], 16);
+                
+                if (adminState.clickMarker) {
+                    adminState.clickMarker.setLatLng([lat, lon]);
+                } else {
+                    adminState.clickMarker = L.marker([lat, lon]).addTo(adminState.map);
+                }
+            }
+            showToast("📍 Đã tự động định vị và ghim vị trí trên bản đồ!", false);
+        } else {
+            showToast("⚠️ Chưa tìm thấy vị trí chính xác. Hãy click chọn trực tiếp trên bản đồ!", true);
+        }
+    } catch (err) {
+        console.error("Lỗi định vị admin:", err);
+    }
 }
 
 async function loadLandlordRooms() {
