@@ -253,6 +253,22 @@ function initLandlordPanel() {
 
     // Sự kiện chọn ảnh
     document.getElementById('landlord-images').addEventListener('change', handleImageSelect);
+
+    // Sự kiện toggle LH Chủ Nhà giá thuê
+    const priceContactCb = document.getElementById('landlord-price-contact');
+    const priceInput = document.getElementById('landlord-price');
+    if (priceContactCb && priceInput) {
+        priceContactCb.addEventListener('change', (e) => {
+            if (e.target.checked) {
+                priceInput.value = '';
+                priceInput.disabled = true;
+                priceInput.placeholder = 'LH Chủ Nhà (Trọ) để nhận báo giá';
+            } else {
+                priceInput.disabled = false;
+                priceInput.placeholder = 'VD: 3000000';
+            }
+        });
+    }
 }
 
 // Xử lý sự kiện chọn file ảnh
@@ -525,7 +541,7 @@ function renderAdminRoomsList(rooms) {
             <div class="room-info" style="margin-left: 12px;">
                 <div class="room-title-line">
                     <strong class="title">${room.title}</strong>
-                    <span class="price">${(room.price / 1000000).toFixed(1)}Tr/tháng</span>
+                    <span class="price" style="${(parseFloat(room.price) || 0) <= 0 ? 'font-size: 11.5px; color: #38bdf8;' : ''}">${(parseFloat(room.price) || 0) > 0 ? (parseFloat(room.price) / 1000000).toFixed(1) + 'Tr/tháng' : 'LH Chủ Nhà (Trọ) để nhận báo giá'}</span>
                 </div>
                 <div class="room-meta-line">
                     <span><i class="fa-solid fa-location-dot"></i> ${room.standardizedAddress || room.address.split(',').slice(0, 3).join(',')}</span>
@@ -562,7 +578,9 @@ window.deleteRoom = async function(id) {
 
 async function submitLandlordRoom() {
     const title = document.getElementById('landlord-title').value.trim();
-    const price = document.getElementById('landlord-price').value.trim();
+    const isContactPrice = document.getElementById('landlord-price-contact')?.checked;
+    const priceRaw = document.getElementById('landlord-price').value.trim();
+    const price = isContactPrice ? 0 : parseFloat(priceRaw);
     const deposit = document.getElementById('landlord-deposit').value.trim();
     const phone = document.getElementById('landlord-phone').value.trim();
     const ownerName = document.getElementById('landlord-owner-name').value.trim() || 'Chủ trọ';
@@ -572,7 +590,7 @@ async function submitLandlordRoom() {
     const description = document.getElementById('landlord-desc').value.trim();
 
     // Validate
-    if (!title || !price || !phone || !address || !latRaw || !lonRaw) {
+    if (!title || (!isContactPrice && !priceRaw) || !phone || !address || !latRaw || !lonRaw) {
         showToast("Vui lòng điền đầy đủ các thông tin có dấu (*)", true);
         return;
     }
@@ -629,6 +647,15 @@ async function submitLandlordRoom() {
 
 function resetLandlordForm() {
     document.getElementById('landlord-title').value = '';
+    const priceContactCb = document.getElementById('landlord-price-contact');
+    if (priceContactCb) {
+        priceContactCb.checked = false;
+        const priceInput = document.getElementById('landlord-price');
+        if (priceInput) {
+            priceInput.disabled = false;
+            priceInput.placeholder = 'VD: 3000000';
+        }
+    }
     document.getElementById('landlord-price').value = '';
     document.getElementById('landlord-deposit').value = '';
     document.getElementById('landlord-phone').value = '';
