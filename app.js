@@ -1,3 +1,8 @@
+// Cấu hình URL Máy chủ Trung tâm (Chung duy nhất 1 backend với trosinhvien.io.vn)
+const API_BASE = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
+    ? ''
+    : 'https://trosinhvien.io.vn';
+
 // Quản lý trạng thái giao diện Admin
 let adminState = {
     activeTab: 'fb-scraper',
@@ -39,7 +44,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
 async function checkAuthStatus() {
     try {
-        const response = await fetch('/api/auth/status');
+        const response = await fetch(`${API_BASE}/api/auth/status`, { credentials: 'include' });
         const data = await response.json();
         if (!data.loggedIn) {
             window.location.href = '/login.html';
@@ -57,7 +62,7 @@ function initLogout() {
     document.getElementById('logout-btn').addEventListener('click', async () => {
         if (confirm("Bạn có chắc chắn muốn đăng xuất khỏi hệ thống admin?")) {
             try {
-                const response = await fetch('/api/auth/logout', { method: 'POST' });
+                const response = await fetch(`${API_BASE}/api/auth/logout`, { method: 'POST', credentials: 'include' });
                 if (response.ok) {
                     window.location.href = '/login.html';
                 }
@@ -588,7 +593,7 @@ async function geocodeLandlordAddress() {
 async function loadLandlordRooms() {
     const listDiv = document.getElementById('admin-rooms-list');
     try {
-        const res = await fetch('/api/admin/landlord-rooms');
+        const res = await fetch(`${API_BASE}/api/admin/landlord-rooms`, { credentials: 'include' });
         if (!res.ok) throw new Error("Unauthorized");
         const rooms = await res.json();
         adminState.landlordRooms = rooms;
@@ -642,8 +647,9 @@ function renderAdminRoomsList(rooms) {
 window.deleteRoom = async function(id) {
     if (confirm("Bạn có chắc chắn muốn xóa vĩnh viễn phòng trọ này khỏi bản đồ chính?")) {
         try {
-            const res = await fetch(`/api/admin/landlord-rooms?id=${id}`, {
-                method: 'DELETE'
+            const res = await fetch(`${API_BASE}/api/admin/landlord-rooms?id=${id}`, {
+                method: 'DELETE',
+                credentials: 'include'
             });
 
             if (res.ok) {
@@ -740,10 +746,11 @@ async function submitLandlordRoom() {
     submitBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Đang tải lên...';
 
     try {
-        const res = await fetch('/api/admin/rooms', {
+        const res = await fetch(`${API_BASE}/api/admin/rooms`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(roomData)
+            body: JSON.stringify(roomData),
+            credentials: 'include'
         });
 
         if (res.ok) {
@@ -831,7 +838,7 @@ function showToast(message, isError = false) {
 async function loadPendingRooms() {
     const listDiv = document.getElementById('pending-rooms-list');
     try {
-        const res = await fetch('/api/admin/pending-rooms');
+        const res = await fetch(`${API_BASE}/api/admin/pending-rooms`, { credentials: 'include' });
         if (!res.ok) throw new Error("Unauthorized");
         const rooms = await res.json();
 
@@ -846,7 +853,7 @@ async function loadPendingRooms() {
 
 async function updatePendingBadge() {
     try {
-        const res = await fetch('/api/admin/pending-rooms');
+        const res = await fetch(`${API_BASE}/api/admin/pending-rooms`, { credentials: 'include' });
         if (res.ok) {
             const rooms = await res.json();
             updatePendingBadgeCount(rooms.length);
@@ -970,10 +977,11 @@ function renderPendingRoomsList(rooms) {
 window.approvePendingRoom = async function(id) {
     if (confirm("Xác nhận duyệt phòng trọ này lên bản đồ chính?")) {
         try {
-            const res = await fetch('/api/admin/pending-rooms/approve', {
+            const res = await fetch(`${API_BASE}/api/admin/pending-rooms/approve`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ id: id })
+                body: JSON.stringify({ id: id }),
+                credentials: 'include'
             });
 
             if (res.ok) {
@@ -991,10 +999,11 @@ window.approvePendingRoom = async function(id) {
 window.rejectPendingRoom = async function(id) {
     if (confirm("Xác nhận từ chối và xóa vĩnh viễn tin đăng cùng toàn bộ hình ảnh phòng trọ này?")) {
         try {
-            const res = await fetch('/api/admin/pending-rooms/reject', {
+            const res = await fetch(`${API_BASE}/api/admin/pending-rooms/reject`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ id: id })
+                body: JSON.stringify({ id: id }),
+                credentials: 'include'
             });
 
             if (res.ok) {
