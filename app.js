@@ -156,7 +156,9 @@ async function saveFbConfig() {
         if (res.ok) {
             showToast("Đã lưu cấu hình Facebook thành công!", false);
         } else {
-            showToast("Lỗi lưu cấu hình. Phiên đăng nhập hết hạn!", true);
+            const data = await res.json().catch(() => ({}));
+            const errorMsg = data.error || data.details || "Lỗi lưu cấu hình. Vui lòng thử lại!";
+            showToast(errorMsg, true);
         }
     } catch (e) {
         showToast("Lỗi kết nối máy chủ khi lưu cấu hình!", true);

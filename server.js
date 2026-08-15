@@ -28,16 +28,20 @@ function getAdminConfig() {
 
 // Lấy mã Token bảo mật của dự án chính để gọi API
 function getMainSecretToken() {
+    if (process.env.ADMIN_SECRET_TOKEN) {
+        return process.env.ADMIN_SECRET_TOKEN.trim();
+    }
     try {
         if (fs.existsSync(mainConfigPath)) {
             const config = JSON.parse(fs.readFileSync(mainConfigPath, 'utf8'));
-            return config.adminSecretToken || 'admin_secret_token_123';
+            return (config.adminSecretToken && config.adminSecretToken.trim()) || 'admin_secret_token_123';
         }
     } catch (e) {
         console.error("[ADMIN SERVER] Không đọc được file config của dự án chính:", e.message);
     }
     return 'admin_secret_token_123';
 }
+
 
 // Cấu hình mã hóa Session không trạng thái (Stateless Session) cho Vercel
 const SESSION_SECRET = process.env.SESSION_SECRET || 'stayhub_secret_session_key_2026';
