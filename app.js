@@ -17,6 +17,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     initTabs();
     initFbScraperPanel();
     initLandlordPanel();
+    initAnalyticsPanel();
     initLogout();
 
     // Cập nhật huy hiệu tin chờ duyệt ban đầu
@@ -85,6 +86,11 @@ function initTabs() {
             // Tải danh sách kiểm duyệt khi chuyển sang tab duyệt
             if (targetTab === 'pending-approvals') {
                 loadPendingRooms();
+            }
+
+            // Nạp thống kê truy cập khi chuyển sang tab analytics
+            if (targetTab === 'analytics') {
+                fetchRealtimeStats();
             }
         });
     });
@@ -851,8 +857,89 @@ window.rejectPendingRoom = async function(id) {
             } else {
                 showToast("Lỗi từ chối tin từ máy chủ!", true);
             }
-        } catch (e) {
-            showToast("Lỗi kết nối mạng khi gửi lệnh từ chối!", true);
-        }
-    }
 };
+
+// ==========================================
+// 6. TAB 4: THỐNG KÊ TRUY CẬP REAL-TIME LOGIC
+// ==========================================
+
+let analyticsInterval = null;
+
+function initAnalyticsPanel() {
+    fetchRealtimeStats();
+
+    const refreshBtn = document.getElementById('refresh-stats-btn');
+    if (refreshBtn) {
+        refreshBtn.addEventListener('click', () => {
+            fetchRealtimeStats();
+            showToast("Đã cập nhật dữ liệu thống kê mới nhất!", false);
+        });
+    }
+
+    // Tự động cập nhật mỗi 5 giây
+    if (analyticsInterval) clearInterval(analyticsInterval);
+    analyticsInterval = setInterval(() => {
+        if (adminState.activeTab === 'analytics') {
+            fetchRealtimeStats();
+        }
+    }, 5000);
+}
+
+async function fetchRealtimeStats() {
+    try {
+        const res = await fetch('/api/admin/stats');
+        if (!res.ok) return;
+        const data = await res.json();
+
+        // Cập nhật số liệu lên giao diện
+        const onlineUsersEl = document.getElementById('stat-online-users');
+        const todayVisitsEl = document.getElementById('stat-today-visits');
+        const totalVisitsEl = document.getElementById('stat-total-visits');
+        const tnuhgSearchesEl = document.getElementById('stat-tnuhg-searches');
+
+        if (onlineUsersEl) onlineUsersEl.textContent = data.onlineUsers || 1;
+        if (todayVisitsEl) todayVisitsEl.textContent = (data.todayVisits || 0).toLocaleString('vi-VN');
+        if (totalVisitsEl) totalVisitsEl.textContent = (data.totalVisits || 0).toLocaleString('vi-VN');
+        if (tnuhgSearchesEl) tnuhgSearchesEl.textContent = (data.tnuHgSearches || 0).toLocaleString('vi-VN');
+
+        const todayDateStr = new Date().toLocaleDateString('vi-VN');
+        const todayDateEl = document.getElementById('stat-today-date');
+        if (todayDateEl) todayDateEl.textContent = `Hôm nay (${todayDateStr})`;
+
+        // Render danh sách nhật ký truy cập
+        const listEl = document.getElementById('realtime-visits-list');
+        if (!listEl) return;
+
+        if (!data.recentVisits || data.recentVisits.length === 0) {
+            listEl.innerHTML = `
+                <tr>
+                    <td colspan="4" style="text-align: center; padding: 25px; color: var(--text-muted);">
+                        Chưa có nhật ký truy cập nào được ghi nhận.
+                    </td>
+                </tr>
+            `;
+            return;
+        }
+
+        listEl.innerHTML = data.recentVisits.map(v => `
+            <tr style="border-bottom: 1px solid var(--border-color); transition: background 0.2s;">
+                <td style="padding: 10px 14px; font-weight: 600; color: var(--color-primary); white-space: nowrap;">
+                    ${v.time} <span style="font-size: 11px; color: var(--text-muted); font-weight: normal;">(${v.date})</span>
+                </td>
+                <td style="padding: 10px 14px; color: white;">
+                    ${v.action || v.path}
+                </td>
+                <td style="padding: 10px 14px; color: var(--text-secondary); white-space: nowrap;">
+                    ${v.device || 'Thiết bị'}
+                </td>
+                <td style="padding: 10px 14px; color: var(--text-muted); font-family: monospace; white-space: nowrap;">
+                    ${v.ip}
+                </td>
+            </tr>
+        `).join('');
+
+    } catch (e) {
+        console.error("Lỗi nạp thống kê real-time:", e);
+    }
+}
+
