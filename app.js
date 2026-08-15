@@ -295,13 +295,6 @@ function initLandlordPanel() {
 // Xử lý sự kiện chọn file ảnh
 function handleImageSelect(e) {
     const files = Array.from(e.target.files);
-    
-    if (adminState.selectedImages.length + files.length > 4) {
-        showToast("Tối đa chỉ được chọn 4 hình ảnh!", true);
-        const spaceLeft = 4 - adminState.selectedImages.length;
-        files.splice(spaceLeft);
-    }
-
     let loadedCount = 0;
     if (files.length === 0) return;
     
@@ -339,7 +332,7 @@ function renderImagePreviews() {
     const statusLabel = document.getElementById('upload-status-label');
     container.innerHTML = '';
 
-    statusLabel.textContent = `Đã chọn ${adminState.selectedImages.length}/4 ảnh`;
+    statusLabel.textContent = `Đã chọn ${adminState.selectedImages.length} ảnh`;
 
     adminState.selectedImages.forEach((base64Str, index) => {
         const wrapper = document.createElement('div');
@@ -665,19 +658,53 @@ async function submitLandlordRoom() {
     const phone = document.getElementById('landlord-phone').value.trim();
     const ownerName = document.getElementById('landlord-owner-name').value.trim() || 'Chủ trọ';
     const address = document.getElementById('landlord-address').value.trim();
-    const latRaw = document.getElementById('landlord-lat').value.trim();
-    const lonRaw = document.getElementById('landlord-lon').value.trim();
+    let latRaw = document.getElementById('landlord-lat').value.trim();
+    let lonRaw = document.getElementById('landlord-lon').value.trim();
     const description = document.getElementById('landlord-desc').value.trim();
 
-    // Validate
-    if (!title || (!isContactPrice && !priceRaw) || !phone || !address || !latRaw || !lonRaw) {
-        showToast("Vui lòng điền đầy đủ các thông tin có dấu (*)", true);
+    // 1. Kiểm tra từng trường và hiển thị thông báo lỗi rõ ràng
+    if (!title) {
+        showToast("Vui lòng nhập Tiêu đề tin đăng!", true);
+        return;
+    }
+    if (!isContactPrice && (!priceRaw || isNaN(price) || price < 0)) {
+        showToast("Vui lòng nhập Giá thuê hợp lệ hoặc chọn 'LH Chủ Nhà để nhận báo giá'!", true);
+        return;
+    }
+    if (!phone) {
+        showToast("Vui lòng nhập Số điện thoại liên hệ!", true);
+        return;
+    }
+    if (!address) {
+        showToast("Vui lòng nhập Địa chỉ phòng trọ!", true);
         return;
     }
 
-    if (adminState.selectedImages.length === 0) {
-        showToast("Vui lòng tải lên ít nhất 1 hình ảnh phòng trọ!", true);
-        return;
+    // 2. Tự động xử lý Tọa độ nếu chưa ghim bản đồ
+    let finalCoords = [22.823853, 104.969584];
+    if (latRaw && lonRaw && !isNaN(parseFloat(latRaw)) && !isNaN(parseFloat(lonRaw))) {
+        finalCoords = [parseFloat(latRaw), parseFloat(lonRaw)];
+    } else {
+        try {
+            const cleanedQuery = cleanAddressForGeocoding(address) || address;
+            const geoRes = await fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(cleanedQuery + ', Vietnam')}&format=json&limit=1`, {
+                headers: { 'User-Agent': 'SmartRoomFinderAdmin/1.0' }
+            });
+            if (geoRes.ok) {
+                const geoData = await geoRes.json();
+                if (geoData && geoData.length > 0) {
+                    finalCoords = [parseFloat(geoData[0].lat), parseFloat(geoData[0].lon)];
+                }
+            }
+        } catch (e) {
+            console.log("Dùng tọa độ mặc định.");
+        }
+    }
+
+    // 3. Xử lý ảnh: Dùng ảnh mặc định nếu chủ trọ không tải ảnh
+    let images = [...adminState.selectedImages];
+    if (images.length === 0) {
+        images = ["https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?auto=format&fit=crop&w=600&q=80"];
     }
 
     // Lấy các tiện nghi đã chọn
@@ -693,10 +720,10 @@ async function submitLandlordRoom() {
         contactPhone: phone,
         ownerName: ownerName,
         address: address,
-        coords: [parseFloat(latRaw), parseFloat(lonRaw)],
+        coords: finalCoords,
         amenities: amenities,
         description: description,
-        images: adminState.selectedImages
+        images: images
     };
 
     const submitBtn = document.getElementById('submit-room-btn');
